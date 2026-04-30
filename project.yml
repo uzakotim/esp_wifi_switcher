@@ -1,0 +1,22 @@
+name: WiFiSwitcherESP
+options:
+  bundleIdPrefix: com.timuruzakov
+targets:
+  WiFiSwitcherESPApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: WiFiSwitcherESPApp
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.timuruzakov.WiFiSwitcherESPApp
+      GENERATE_INFOPLIST_FILE: YES
+      MARKETING_VERSION: 1.0.0
+      CURRENT_PROJECT_VERSION: 1
+    info:
+      path: WiFiSwitcherESPApp/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+
