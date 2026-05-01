@@ -336,7 +336,7 @@ struct ContentView: View {
                     }
                     VStack{ Text("Feedback")
                             .font(.caption)
-                            .frame(width: 60, height: 20)
+                            .frame(width: 70, height: 20)
                         
                         Button {
                             guard let port = UInt16(targetPort) else {
