@@ -22,153 +22,212 @@ struct ContentView: View {
             Text("WiFi Switcher")
                 .font(.title)
             
-            HStack(spacing: 12) {
-                VStack{
-                    Text("IP Address")
-                    TextField("IP Address", text: $ipAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-                        .keyboardType(.numbersAndPunctuation)
-                        .textFieldStyle(.roundedBorder)
+            ScrollView(.vertical){
+                HStack(spacing: 12) {
+                    VStack{
+                        Text("IP Address")
+                        TextField("IP Address", text: $ipAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            .keyboardType(.numbersAndPunctuation)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    
+                    VStack{
+                        Text("Port")
+                        TextField("Port", text: $portString)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            .keyboardType(.numberPad)
+                            .frame(width: 90)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    
+                    
+                    
                 }
                 
-                VStack{
-                    Text("Port")
-                    TextField("Port", text: $portString)
+                VStack(spacing: 12) {
+                    Text("Gateway")
+                    TextField("Gateway", text: $gatewayAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
                         .keyboardType(.numberPad)
-                        .frame(width: 90)
                         .textFieldStyle(.roundedBorder)
                 }
-                
-                
-                
+                VStack{
+                    Text("SSID")
+                    TextField("SSID", text: $externalSSID)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(.roundedBorder)
+                    
+                }
+                VStack{
+                    Text("Password")
+                    TextField("Password", text: $externalPassword)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(.roundedBorder)
+                    
+                }
             }
             
-            VStack(spacing: 12) {
-                Text("Gateway")
-                TextField("Gateway", text: $gatewayAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .keyboardType(.numberPad)
-                    .textFieldStyle(.roundedBorder)
-            }
             VStack{
-                Text("SSID")
-                TextField("SSID", text: $externalSSID)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .keyboardType(.numberPad)
-                    .textFieldStyle(.roundedBorder)
-                
-            }
-            VStack{
-                Text("Password")
-                TextField("Password", text: $externalPassword)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .keyboardType(.numberPad)
-                    .textFieldStyle(.roundedBorder)
-                
-            }
-            
-            Button {
-                // TODO
-                if boardMode == "local" {
-                    // set to external
-                    boardMode = "external"
-                    statusMessage = "Set mode to external"
-                }
-                else{
-                    boardMode = "local"
-                    statusMessage = "Set mode to local wifi"
-                }
-            }
-            label: {
-                Label(boardMode == "local" ? "Switch to External" : "Switch to Local", systemImage: boardMode == "local" ? "wifi.router.fill" : "wifi")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: 300)
-            }
-            .buttonStyle(.glass)
-            .tint(Color.blue)
-            Button {
-                // TODO
-            }
-            label: {
-                Label("Upload Settings", systemImage: "square.and.arrow.up")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: 200)
-            }
-            .buttonStyle(.glass)
-            .tint(Color.blue)
-            Button {
-                guard let port = UInt16(portString) else {
-                    statusMessage = "Invalid port"
-                    return
-                }
-                statusMessage = "Reloading connection..."
-                
-                // Ensure manager is initialized with current settings
-                if manager == nil{
-                    manager = UDPConnectionManager(host: ipAddress, port: port)
-                    manager?.start()
-                }
-                else {
-                    manager?.cancel()
-                    manager = UDPConnectionManager(host: ipAddress, port: port)
-                    manager?.start()
-                }
-                statusMessage = "Reloaded connection"
-                
-            } label: {
-                Label("Reload connection", systemImage: "arrow.2.circlepath.circle")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: 300)
-            }
-            .tint(.green)
-            .buttonStyle(.glass)
-            .disabled(ipAddress.isEmpty || portString.isEmpty)
-            
-            Button {
-                guard let port = UInt16(portString) else {
-                    statusMessage = "Invalid port"
-                    return
-                }
-                statusMessage = "Sending reboot command..."
-                
-                // Ensure manager is initialized with current settings
-                if manager == nil{
-                    manager = UDPConnectionManager(host: ipAddress, port: port)
-                    manager?.start()
-                }
-                
-                manager?.sendString("app:reboot") { error in
-                    DispatchQueue.main.async {
-                        if let error = error {
-                            statusMessage = "Failed to send: \(error.localizedDescription)"
-                        } else {
-                            statusMessage = "Reboot command sent to \(ipAddress):\(port)"
+                HStack{
+                    VStack{ Text("Mode")
+                            .frame(width: 50, height: 15)
+                        
+                        Button {
+                            guard let port = UInt16(portString) else {
+                                statusMessage = "Invalid port"
+                                return
+                            }
+                            if externalSSID.isEmpty || externalPassword.isEmpty {
+                                statusMessage = "SSID and password required"
+                                return
+                            }
+                            statusMessage = "Sending mode change..."
+                            
+                            // Ensure manager is initialized with current settings
+                            if manager == nil{
+                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager?.start()
+                            }
+                            
+                            
+                            if boardMode == "local" {
+                                // set to external
+                                boardMode = "external"
+                                
+                                manager?.sendString("app:mode:1") { error in
+                                    DispatchQueue.main.async {
+                                        if let error = error {
+                                            statusMessage = "Failed to send: \(error.localizedDescription)"
+                                        } else {
+                                            statusMessage = "Set mode to external \(ipAddress):\(port)"
+                                        }
+                                    }
+                                }
+                               
+                                
+                            }
+                            else{
+                                boardMode = "local"
+                                
+                                manager?.sendString("app:mode:0") { error in
+                                    DispatchQueue.main.async {
+                                        if let error = error {
+                                            statusMessage = "Failed to send: \(error.localizedDescription)"
+                                        } else {
+                                            statusMessage = "Set mode to local wifi \(ipAddress):\(port)"
+                                        }
+                                    }
+                                }
+                                statusMessage = "Set mode to local wifi"
+                            }
                         }
+                        label: {
+                            Image(systemName:boardMode == "local" ?  "wifi": "wifi.router.fill")
+                                .font(.headline)
+                                .padding()
+                                .frame(width: 50,height: 50)
+                        }
+                        .buttonStyle(.glass)
+                        .tint(Color.blue)
+                    }
+                    VStack{ Text("Upload")
+                            .frame(width: 60, height: 15)
+                        
+                        Button {
+                            // TODO
+                        }
+                        label: {
+                            Image(systemName:"square.and.arrow.up")
+                                .font(.headline)
+                                .padding()
+                                .frame(width: 50,height: 50)
+                        }
+                        .buttonStyle(.glass)
+                        .tint(Color.blue)
+                    }
+                    VStack{ Text("Reload")
+                                .frame(width: 60, height: 15)
+                            Button {
+                            guard let port = UInt16(portString) else {
+                                statusMessage = "Invalid port"
+                                return
+                            }
+                            statusMessage = "Reloading connection..."
+                            
+                            // Ensure manager is initialized with current settings
+                            if manager == nil{
+                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager?.start()
+                            }
+                            else {
+                                manager?.cancel()
+                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager?.start()
+                            }
+                            statusMessage = "Reloaded connection"
+                            
+                        } label: {
+                            Image(systemName: "arrow.2.circlepath.circle")
+                                .font(.headline)
+                                .padding()
+                                .frame(width: 50,height: 50)
+                        }
+                        .tint(.green)
+                        .buttonStyle(.glass)
+                        .disabled(ipAddress.isEmpty || portString.isEmpty)
+                    }
+                    VStack{ Text("Reboot")
+                            .frame(width: 60, height: 15)
+                        Button {
+                            
+                            guard let port = UInt16(portString) else {
+                                statusMessage = "Invalid port"
+                                return
+                            }
+                            statusMessage = "Sending reboot command..."
+                            
+                            // Ensure manager is initialized with current settings
+                            if manager == nil{
+                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager?.start()
+                            }
+                            
+                            manager?.sendString("app:reboot") { error in
+                                DispatchQueue.main.async {
+                                    if let error = error {
+                                        statusMessage = "Failed to send: \(error.localizedDescription)"
+                                    } else {
+                                        statusMessage = "Reboot command sent to \(ipAddress):\(port)"
+                                    }
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "power")
+                                .font(.headline)
+                                .padding()
+                                .frame(width: 50,height: 50)
+                        }
+                        .tint(.red)
+                        .buttonStyle(.glass)
+                        .disabled(ipAddress.isEmpty || portString.isEmpty)
+                        
                     }
                 }
-            } label: {
-                Label("Reboot", systemImage: "power")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: 200)
             }
-            .tint(.red)
-            .buttonStyle(.glass)
-            .disabled(ipAddress.isEmpty || portString.isEmpty)
+            
             
             Text(statusMessage)
                 .foregroundStyle(.secondary)
         }
-        .padding(30)
+        .padding(20)
         .onAppear {
             if let port = UInt16(portString) {
                 manager = UDPConnectionManager(host: ipAddress, port: port)

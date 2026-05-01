@@ -146,6 +146,10 @@ void setup() {
         Serial.println("\nConnected! IP: " + WiFi.localIP().toString());
       else
         Serial.println("\nConnection Failed.");
+        EEPROM.write(ADDR_MODE, 0);
+        EEPROM.commit();
+        Serial.println("\nSwitched to AP mode.");
+        ESP.restart();
     }
   }
 
