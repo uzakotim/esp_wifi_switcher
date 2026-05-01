@@ -6,8 +6,8 @@
 const char *DEFAULT_AP_SSID = "OMNI_ESP";
 const char *DEFAULT_AP_PASS = "12345678";
 const uint16_t DEFAULT_PORT = 8080;
-const IPAddress DEFAULT_IP(172, 21, 21, 21);
-const IPAddress DEFAULT_GW(172, 21, 21, 1);
+const IPAddress DEFAULT_IP(192, 168, 1, 100);
+const IPAddress DEFAULT_GW(192, 168, 1, 1);
 const IPAddress DEFAULT_SUB(255, 255, 255, 0);
 
 // Runtime Variables
@@ -162,9 +162,10 @@ void loop() {
     String message = String(packetBuffer);
     Serial.println("UDP Msg: " + message);
 
-    if (message == "app:reboot")
+    if (message == "app:reboot"){
+      Serial.println("Rebooting...");
       ESP.restart();
-
+    }
     else if (message.startsWith("app:mode:")) {
       EEPROM.write(ADDR_MODE, message.substring(9).toInt());
       EEPROM.commit();

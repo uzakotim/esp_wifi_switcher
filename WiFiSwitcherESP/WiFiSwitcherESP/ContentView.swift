@@ -9,18 +9,19 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var statusMessage: String = ""
-    @State private var ipAddress: String = "172.21.21.21"
+    @State private var ipAddress: String = "192.168.1.100"
     @State private var portString: String = "8080"
-    @State private var gatewayAddress: String = "172.21.21.1"
+    @State private var gatewayAddress: String = "192.168.1.1"
     @State private var boardMode: String = "local"
     @State private var externalSSID: String = ""
     @State private var externalPassword: String = ""
-
+    @State private var manager: UDPConnectionManager?
+    
     var body: some View {
         VStack(spacing: 24) {
             Text("WiFi Switcher")
                 .font(.title)
-
+            
             HStack(spacing: 12) {
                 VStack{
                     Text("IP Address")
@@ -30,7 +31,7 @@ struct ContentView: View {
                         .keyboardType(.numbersAndPunctuation)
                         .textFieldStyle(.roundedBorder)
                 }
-               
+                
                 VStack{
                     Text("Port")
                     TextField("Port", text: $portString)
@@ -40,11 +41,11 @@ struct ContentView: View {
                         .frame(width: 90)
                         .textFieldStyle(.roundedBorder)
                 }
-              
                 
-               
+                
+                
             }
-          
+            
             VStack(spacing: 12) {
                 Text("Gateway")
                 TextField("Gateway", text: $gatewayAddress)
@@ -71,7 +72,7 @@ struct ContentView: View {
                     .textFieldStyle(.roundedBorder)
                 
             }
-           
+            
             Button {
                 // TODO
                 if boardMode == "local" {
@@ -80,10 +81,6 @@ struct ContentView: View {
                     statusMessage = "Set mode to external"
                 }
                 else{
-                    // set to local
-                    gatewayAddress="172.21.21.1"
-                    ipAddress = "172.21.21.21"
-                    portString = "8080"
                     boardMode = "local"
                     statusMessage = "Set mode to local wifi"
                 }
@@ -112,9 +109,44 @@ struct ContentView: View {
                     statusMessage = "Invalid port"
                     return
                 }
+                statusMessage = "Reloading connection..."
+                
+                // Ensure manager is initialized with current settings
+                if manager == nil{
+                    manager = UDPConnectionManager(host: ipAddress, port: port)
+                    manager?.start()
+                }
+                else {
+                    manager?.cancel()
+                    manager = UDPConnectionManager(host: ipAddress, port: port)
+                    manager?.start()
+                }
+                statusMessage = "Reloaded connection"
+                
+            } label: {
+                Label("Reload connection", systemImage: "arrow.2.circlepath.circle")
+                    .font(.headline)
+                    .padding()
+                    .frame(maxWidth: 300)
+            }
+            .tint(.green)
+            .buttonStyle(.glass)
+            .disabled(ipAddress.isEmpty || portString.isEmpty)
+            
+            Button {
+                guard let port = UInt16(portString) else {
+                    statusMessage = "Invalid port"
+                    return
+                }
                 statusMessage = "Sending reboot command..."
-                let manager = UDPConnectionManager(host: ipAddress, port: port)
-                manager.sendString("app:reboot") { error in
+                
+                // Ensure manager is initialized with current settings
+                if manager == nil{
+                    manager = UDPConnectionManager(host: ipAddress, port: port)
+                    manager?.start()
+                }
+                
+                manager?.sendString("app:reboot") { error in
                     DispatchQueue.main.async {
                         if let error = error {
                             statusMessage = "Failed to send: \(error.localizedDescription)"
@@ -132,11 +164,20 @@ struct ContentView: View {
             .tint(.red)
             .buttonStyle(.glass)
             .disabled(ipAddress.isEmpty || portString.isEmpty)
-
+            
             Text(statusMessage)
                 .foregroundStyle(.secondary)
         }
         .padding(30)
+        .onAppear {
+            if let port = UInt16(portString) {
+                manager = UDPConnectionManager(host: ipAddress, port: port)
+                manager?.start()
+            }
+        }
+        .onDisappear {
+            manager?.cancel()
+        }
     }
 }
 
