@@ -60,16 +60,15 @@ struct ContentView: View {
                     TextField("SSID", text: $externalSSID)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
-                        .keyboardType(.numberPad)
                         .textFieldStyle(.roundedBorder)
                     
                 }
                 VStack{
                     Text("Password")
-                    TextField("Password", text: $externalPassword)
+                    SecureField("Password", text: $externalPassword)
+                        
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
-                        .keyboardType(.numberPad)
                         .textFieldStyle(.roundedBorder)
                     
                 }
@@ -78,7 +77,8 @@ struct ContentView: View {
             VStack{
                 HStack{
                     VStack{ Text("Mode")
-                            .frame(width: 50, height: 15)
+                            .font(.caption)
+                            .frame(width: 60, height: 20)
                         
                         Button {
                             guard let port = UInt16(portString) else {
@@ -139,10 +139,103 @@ struct ContentView: View {
                         .tint(Color.blue)
                     }
                     VStack{ Text("Upload")
-                            .frame(width: 60, height: 15)
+                            .font(.caption)
+                            .frame(width: 60, height: 20)
                         
                         Button {
-                            // TODO
+                            guard let port = UInt16(portString) else {
+                                statusMessage = "Invalid port"
+                                return
+                            }
+                            if ipAddress.isEmpty || portString.isEmpty || gatewayAddress.isEmpty || externalSSID.isEmpty || externalPassword.isEmpty {
+                                statusMessage = "Please fill in all fields"
+                                return
+                            }
+                            statusMessage = "Uploading configurations..."
+                            
+                            // Ensure manager is initialized with current settings
+                            if manager == nil{
+                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager?.start()
+                            }
+                            else {
+                                manager?.cancel()
+                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager?.start()
+                            }
+                            // mode
+                            
+                            manager?.sendString(boardMode=="local" ? "app:mode:0" : "app:mode:1") { error in
+                                DispatchQueue.main.async {
+                                    if let error = error {
+                                        statusMessage = "Failed to send: \(error.localizedDescription)"
+                                    } else {
+                                        statusMessage = boardMode=="local" ? "Set mode to local..." : "Set mode to external..."
+                                    }
+                                }
+                            }
+                            // ssid
+                            
+                            manager?.sendString("app:set:ssid:\(externalSSID)") { error in
+                                DispatchQueue.main.async {
+                                    if let error = error {
+                                        statusMessage = "Failed to send: \(error.localizedDescription)"
+                                    } else {
+                                        statusMessage = "Set SSID..."
+                                    }
+                                }
+                            }
+                            
+                            // password
+                            
+                            manager?.sendString("app:set:pass:\(externalPassword)") { error in
+                                DispatchQueue.main.async {
+                                    if let error = error {
+                                        statusMessage = "Failed to send: \(error.localizedDescription)"
+                                    } else {
+                                        statusMessage = "Set password..."
+                                    }
+                                }
+                            }
+                            
+                            // ip
+                            
+                            manager?.sendString("app:set:ip:\(ipAddress)") { error in
+                                DispatchQueue.main.async {
+                                    if let error = error {
+                                        statusMessage = "Failed to send: \(error.localizedDescription)"
+                                    } else {
+                                        statusMessage = "Set IP..."
+                                    }
+                                }
+                            }
+                            
+                            // port
+                            
+                            manager?.sendString("app:set:port:\(portString)") { error in
+                                DispatchQueue.main.async {
+                                    if let error = error {
+                                        statusMessage = "Failed to send: \(error.localizedDescription)"
+                                    } else {
+                                        statusMessage = "Set port..."
+                                    }
+                                }
+                            }
+                            
+                            // gateway
+                            
+                            manager?.sendString("app:set:gw:\(gatewayAddress)") { error in
+                                DispatchQueue.main.async {
+                                    if let error = error {
+                                        statusMessage = "Failed to send: \(error.localizedDescription)"
+                                    } else {
+                                        statusMessage = "Set gateway..."
+                                    }
+                                }
+                            }
+                            DispatchQueue.main.async {
+                                statusMessage = "All set and uploaded. Please reboot."
+                            }
                         }
                         label: {
                             Image(systemName:"square.and.arrow.up")
@@ -154,7 +247,8 @@ struct ContentView: View {
                         .tint(Color.blue)
                     }
                     VStack{ Text("Reload")
-                                .frame(width: 60, height: 15)
+                                .font(.caption)
+                                .frame(width: 60, height: 20)
                             Button {
                             guard let port = UInt16(portString) else {
                                 statusMessage = "Invalid port"
@@ -185,7 +279,8 @@ struct ContentView: View {
                         .disabled(ipAddress.isEmpty || portString.isEmpty)
                     }
                     VStack{ Text("Reboot")
-                            .frame(width: 60, height: 15)
+                            .font(.caption)
+                            .frame(width: 60, height: 20)
                         Button {
                             
                             guard let port = UInt16(portString) else {
@@ -219,6 +314,54 @@ struct ContentView: View {
                         .buttonStyle(.glass)
                         .disabled(ipAddress.isEmpty || portString.isEmpty)
                         
+                    }
+                    VStack{ Text("Feedback")
+                            .font(.caption)
+                            .frame(width: 60, height: 20)
+                        
+                        Button {
+                            guard let port = UInt16(portString) else {
+                                statusMessage = "Invalid port"
+                                return
+                            }
+                            if ipAddress.isEmpty || portString.isEmpty || gatewayAddress.isEmpty  {
+                                statusMessage = "Please fill in ip, port, and gateway"
+                                return
+                            }
+                            statusMessage = "Uploading configurations..."
+                            
+                            // Ensure manager is initialized with current settings
+                            if manager == nil{
+                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager?.start()
+                            }
+                            else {
+                                manager?.cancel()
+                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager?.start()
+                            }
+                            // feedback
+                            // listen for incoming UDP
+                            DispatchQueue.global(qos: .background).async {
+                                while true {
+                                    guard let message = manager?.sendString("app:get:status") else {
+                                        break
+                                    }
+                                    DispatchQueue.main.async {
+                                        statusMessage = message;
+                                    }
+                                }
+                            }
+                            
+                        }
+                        label: {
+                            Image(systemName:"square.and.arrow.down")
+                                .font(.headline)
+                                .padding()
+                                .frame(width: 40,height: 50)
+                        }
+                        .buttonStyle(.glass)
+                        .tint(Color.blue)
                     }
                 }
             }

@@ -142,14 +142,16 @@ void setup() {
         delay(500);
         Serial.print(".");
       }
-      if (WiFi.status() == WL_CONNECTED)
+      if (WiFi.status() == WL_CONNECTED){
         Serial.println("\nConnected! IP: " + WiFi.localIP().toString());
-      else
+      }
+      else{
         Serial.println("\nConnection Failed.");
         EEPROM.write(ADDR_MODE, 0);
         EEPROM.commit();
         Serial.println("\nSwitched to AP mode.");
         ESP.restart();
+      }
     }
   }
 
