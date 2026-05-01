@@ -213,78 +213,47 @@ struct ContentView: View {
                                 manager = UDPConnectionManager(host: targetIP, port: port)
                                 manager?.start()
                             }
-                            // mode
-                            
-                            manager?.sendString(boardMode=="local" ? "app:mode:0" : "app:mode:1") { error in
-                                DispatchQueue.main.async {
-                                    if let error = error {
-                                        statusMessage = "Failed to send: \(error.localizedDescription)"
-                                    } else {
-                                        statusMessage = boardMode=="local" ? "Set mode to local..." : "Set mode to external..."
-                                    }
+                            // Using a Task to execute these sequentially with a delay between them to ensure the ESP8266 has time to process
+                            Task { @MainActor in
+                                do {
+                                    guard let manager = manager else { return }
+                                    
+                                    // mode
+                                    try await manager.sendStringAsync(boardMode == "local" ? "app:mode:0" : "app:mode:1")
+                                    statusMessage = boardMode == "local" ? "Set mode to local..." : "Set mode to external..."
+                                    try await Task.sleep(nanoseconds: 300_000_000)
+                                    
+                                    // ssid
+                                    try await manager.sendStringAsync("app:set:ssid:\(externalSSID)")
+                                    statusMessage = "Set SSID..."
+                                    try await Task.sleep(nanoseconds: 300_000_000)
+                                    
+                                    // password
+                                    try await manager.sendStringAsync("app:set:pass:\(externalPassword)")
+                                    statusMessage = "Set password..."
+                                    try await Task.sleep(nanoseconds: 300_000_000)
+                                    
+                                    // ip
+                                    try await manager.sendStringAsync("app:set:ip:\(ipAddress)")
+                                    targetIP = ipAddress
+                                    statusMessage = "Set IP..."
+                                    try await Task.sleep(nanoseconds: 300_000_000)
+                                    
+                                    // port
+                                    try await manager.sendStringAsync("app:set:port:\(portString)")
+                                    targetPort = portString
+                                    statusMessage = "Set port..."
+                                    try await Task.sleep(nanoseconds: 300_000_000)
+                                    
+                                    // gateway
+                                    try await manager.sendStringAsync("app:set:gw:\(gatewayAddress)")
+                                    statusMessage = "Set gateway..."
+                                    try await Task.sleep(nanoseconds: 300_000_000)
+                                    
+                                    statusMessage = "All set and uploaded. Please reboot."
+                                } catch {
+                                    statusMessage = "Failed to send: \(error.localizedDescription)"
                                 }
-                            }
-                            // ssid
-                            
-                            manager?.sendString("app:set:ssid:\(externalSSID)") { error in
-                                DispatchQueue.main.async {
-                                    if let error = error {
-                                        statusMessage = "Failed to send: \(error.localizedDescription)"
-                                    } else {
-                                        statusMessage = "Set SSID..."
-                                    }
-                                }
-                            }
-                            
-                            // password
-                            
-                            manager?.sendString("app:set:pass:\(externalPassword)") { error in
-                                DispatchQueue.main.async {
-                                    if let error = error {
-                                        statusMessage = "Failed to send: \(error.localizedDescription)"
-                                    } else {
-                                        statusMessage = "Set password..."
-                                    }
-                                }
-                            }
-                            
-                            // ip
-                            
-                            manager?.sendString("app:set:ip:\(ipAddress)") { error in
-                                DispatchQueue.main.async {
-                                    if let error = error {
-                                        statusMessage = "Failed to send: \(error.localizedDescription)"
-                                    } else {
-                                        statusMessage = "Set IP..."
-                                    }
-                                }
-                            }
-                            
-                            // port
-                            
-                            manager?.sendString("app:set:port:\(portString)") { error in
-                                DispatchQueue.main.async {
-                                    if let error = error {
-                                        statusMessage = "Failed to send: \(error.localizedDescription)"
-                                    } else {
-                                        statusMessage = "Set port..."
-                                    }
-                                }
-                            }
-                            
-                            // gateway
-                            
-                            manager?.sendString("app:set:gw:\(gatewayAddress)") { error in
-                                DispatchQueue.main.async {
-                                    if let error = error {
-                                        statusMessage = "Failed to send: \(error.localizedDescription)"
-                                    } else {
-                                        statusMessage = "Set gateway..."
-                                    }
-                                }
-                            }
-                            DispatchQueue.main.async {
-                                statusMessage = "All set and uploaded. Please reboot."
                             }
                         }
                         label: {

@@ -56,6 +56,18 @@ final class UDPConnectionManager {
         }
     }
 
+    func sendStringAsync(_ string: String, using encoding: String.Encoding = .utf8) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            sendString(string, using: encoding) { error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: ())
+                }
+            }
+        }
+    }
+
     func receiveString(completion: @escaping (String?, Error?) -> Void) {
         queue.async { [weak self] in
             guard let self = self, let connection = self.connection else {
