@@ -56,6 +56,26 @@ final class UDPConnectionManager {
         }
     }
 
+    func receiveString(completion: @escaping (String?, Error?) -> Void) {
+        queue.async { [weak self] in
+            guard let self = self, let connection = self.connection else {
+                completion(nil, NSError(domain: "UDPConnectionManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Connection not available"]))
+                return
+            }
+            connection.receiveMessage { data, context, isComplete, error in
+                if let error = error {
+                    completion(nil, error)
+                    return
+                }
+                if let data = data, let string = String(data: data, encoding: .utf8) {
+                    completion(string, nil)
+                } else {
+                    completion(nil, NSError(domain: "UDPConnectionManager", code: -3, userInfo: [NSLocalizedDescriptionKey: "Invalid data received"]))
+                }
+            }
+        }
+    }
+
     func cancel() {
         queue.async { [weak self] in
             self?.connection?.cancel()

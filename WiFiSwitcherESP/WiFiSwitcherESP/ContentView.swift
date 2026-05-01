@@ -9,6 +9,8 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var statusMessage: String = ""
+    @State private var targetIP: String = "192.168.1.100"
+    @State private var targetPort: String = "8080"
     @State private var ipAddress: String = "192.168.1.100"
     @State private var portString: String = "8080"
     @State private var gatewayAddress: String = "192.168.1.1"
@@ -17,15 +19,51 @@ struct ContentView: View {
     @State private var externalPassword: String = ""
     @State private var manager: UDPConnectionManager?
     
+    @State private var receivedMAC: String = ""
+    @State private var receivedIP: String = ""
+    @State private var receivedPort: String = ""
+    @State private var receivedMode: String = ""
+    
     var body: some View {
         VStack(spacing: 24) {
             Text("WiFi Switcher")
                 .font(.title)
             
             ScrollView(.vertical){
+                VStack(spacing: 12) {
+                    Text("Target Device (Send To)").font(.headline)
+                    HStack(spacing: 12) {
+                        VStack{
+                            Text("Device IP")
+                            TextField("Device IP", text: $targetIP)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled(true)
+                                .keyboardType(.numbersAndPunctuation)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                        VStack{
+                            Text("Device Port")
+                            TextField("Device Port", text: $targetPort)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled(true)
+                                .keyboardType(.numberPad)
+                                .frame(width: 90)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                    }
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(12)
+                .padding(.horizontal)
+                
+                Divider().padding(.vertical, 8)
+                
+                Text("New Configuration").font(.headline)
+                
                 HStack(spacing: 12) {
                     VStack{
-                        Text("IP Address")
+                        Text("New IP Address")
                         TextField("IP Address", text: $ipAddress)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled(true)
@@ -34,7 +72,7 @@ struct ContentView: View {
                     }
                     
                     VStack{
-                        Text("Port")
+                        Text("New Port")
                         TextField("Port", text: $portString)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled(true)
@@ -42,13 +80,10 @@ struct ContentView: View {
                             .frame(width: 90)
                             .textFieldStyle(.roundedBorder)
                     }
-                    
-                    
-                    
                 }
                 
                 VStack(spacing: 12) {
-                    Text("Gateway")
+                    Text("New Gateway")
                     TextField("Gateway", text: $gatewayAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
@@ -72,7 +107,22 @@ struct ContentView: View {
                         .textFieldStyle(.roundedBorder)
                     
                 }
+                if !receivedMAC.isEmpty || !receivedIP.isEmpty {
+                    VStack(spacing: 8) {
+                        Text("Device Dashboard").font(.headline)
+                        HStack { Text("MAC:"); Spacer(); Text(receivedMAC) }
+                        HStack { Text("IP:"); Spacer(); Text(receivedIP) }
+                        HStack { Text("Port:"); Spacer(); Text(receivedPort) }
+                        HStack { Text("Mode:"); Spacer(); Text(receivedMode == "1" ? "External": "Local") }
+                    }
+                    .padding()
+                    .background(Color.green.opacity(0.2))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                }
             }
+            
+           
             
             VStack{
                 HStack{
@@ -81,8 +131,8 @@ struct ContentView: View {
                             .frame(width: 60, height: 20)
                         
                         Button {
-                            guard let port = UInt16(portString) else {
-                                statusMessage = "Invalid port"
+                            guard let port = UInt16(targetPort) else {
+                                statusMessage = "Invalid target port"
                                 return
                             }
                             if externalSSID.isEmpty || externalPassword.isEmpty {
@@ -93,7 +143,7 @@ struct ContentView: View {
                             
                             // Ensure manager is initialized with current settings
                             if manager == nil{
-                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager = UDPConnectionManager(host: targetIP, port: port)
                                 manager?.start()
                             }
                             
@@ -107,7 +157,7 @@ struct ContentView: View {
                                         if let error = error {
                                             statusMessage = "Failed to send: \(error.localizedDescription)"
                                         } else {
-                                            statusMessage = "Set mode to external \(ipAddress):\(port)"
+                                            statusMessage = "Set mode to external \(targetIP):\(port)"
                                         }
                                     }
                                 }
@@ -122,7 +172,7 @@ struct ContentView: View {
                                         if let error = error {
                                             statusMessage = "Failed to send: \(error.localizedDescription)"
                                         } else {
-                                            statusMessage = "Set mode to local wifi \(ipAddress):\(port)"
+                                            statusMessage = "Set mode to local wifi \(targetIP):\(port)"
                                         }
                                     }
                                 }
@@ -143,8 +193,8 @@ struct ContentView: View {
                             .frame(width: 60, height: 20)
                         
                         Button {
-                            guard let port = UInt16(portString) else {
-                                statusMessage = "Invalid port"
+                            guard let port = UInt16(targetPort) else {
+                                statusMessage = "Invalid target port"
                                 return
                             }
                             if ipAddress.isEmpty || portString.isEmpty || gatewayAddress.isEmpty || externalSSID.isEmpty || externalPassword.isEmpty {
@@ -155,12 +205,12 @@ struct ContentView: View {
                             
                             // Ensure manager is initialized with current settings
                             if manager == nil{
-                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager = UDPConnectionManager(host: targetIP, port: port)
                                 manager?.start()
                             }
                             else {
                                 manager?.cancel()
-                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager = UDPConnectionManager(host: targetIP, port: port)
                                 manager?.start()
                             }
                             // mode
@@ -250,20 +300,20 @@ struct ContentView: View {
                                 .font(.caption)
                                 .frame(width: 60, height: 20)
                             Button {
-                            guard let port = UInt16(portString) else {
-                                statusMessage = "Invalid port"
+                            guard let port = UInt16(targetPort) else {
+                                statusMessage = "Invalid target port"
                                 return
                             }
                             statusMessage = "Reloading connection..."
                             
                             // Ensure manager is initialized with current settings
                             if manager == nil{
-                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager = UDPConnectionManager(host: targetIP, port: port)
                                 manager?.start()
                             }
                             else {
                                 manager?.cancel()
-                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager = UDPConnectionManager(host: targetIP, port: port)
                                 manager?.start()
                             }
                             statusMessage = "Reloaded connection"
@@ -276,22 +326,22 @@ struct ContentView: View {
                         }
                         .tint(.green)
                         .buttonStyle(.glass)
-                        .disabled(ipAddress.isEmpty || portString.isEmpty)
+                        .disabled(targetIP.isEmpty || targetPort.isEmpty)
                     }
                     VStack{ Text("Reboot")
                             .font(.caption)
                             .frame(width: 60, height: 20)
                         Button {
                             
-                            guard let port = UInt16(portString) else {
-                                statusMessage = "Invalid port"
+                            guard let port = UInt16(targetPort) else {
+                                statusMessage = "Invalid target port"
                                 return
                             }
                             statusMessage = "Sending reboot command..."
                             
                             // Ensure manager is initialized with current settings
                             if manager == nil{
-                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager = UDPConnectionManager(host: targetIP, port: port)
                                 manager?.start()
                             }
                             
@@ -300,7 +350,7 @@ struct ContentView: View {
                                     if let error = error {
                                         statusMessage = "Failed to send: \(error.localizedDescription)"
                                     } else {
-                                        statusMessage = "Reboot command sent to \(ipAddress):\(port)"
+                                        statusMessage = "Reboot command sent to \(targetIP):\(port)"
                                     }
                                 }
                             }
@@ -312,7 +362,7 @@ struct ContentView: View {
                         }
                         .tint(.red)
                         .buttonStyle(.glass)
-                        .disabled(ipAddress.isEmpty || portString.isEmpty)
+                        .disabled(targetIP.isEmpty || targetPort.isEmpty)
                         
                     }
                     VStack{ Text("Feedback")
@@ -320,35 +370,40 @@ struct ContentView: View {
                             .frame(width: 60, height: 20)
                         
                         Button {
-                            guard let port = UInt16(portString) else {
-                                statusMessage = "Invalid port"
+                            guard let port = UInt16(targetPort) else {
+                                statusMessage = "Invalid target port"
                                 return
                             }
-                            if ipAddress.isEmpty || portString.isEmpty || gatewayAddress.isEmpty  {
-                                statusMessage = "Please fill in ip, port, and gateway"
-                                return
-                            }
-                            statusMessage = "Uploading configurations..."
+                            // Feedback only needs the target to be valid to fetch status
+                            statusMessage = "Requesting feedback..."
                             
                             // Ensure manager is initialized with current settings
                             if manager == nil{
-                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager = UDPConnectionManager(host: targetIP, port: port)
                                 manager?.start()
                             }
                             else {
                                 manager?.cancel()
-                                manager = UDPConnectionManager(host: ipAddress, port: port)
+                                manager = UDPConnectionManager(host: targetIP, port: port)
                                 manager?.start()
                             }
                             // feedback
-                            // listen for incoming UDP
-                            DispatchQueue.global(qos: .background).async {
-                                while true {
-                                    guard let message = manager?.sendString("app:get:status") else {
-                                        break
-                                    }
-                                    DispatchQueue.main.async {
-                                        statusMessage = message;
+                            manager?.sendString("app:get:status") { error in
+                                DispatchQueue.main.async {
+                                    if let error = error {
+                                        statusMessage = "Failed to send: \(error.localizedDescription)"
+                                    } else {
+                                        statusMessage = "Sent status request..."
+                                        manager?.receiveString { message, error in
+                                            DispatchQueue.main.async {
+                                                if let error = error {
+                                                    statusMessage = "Receive error: \(error.localizedDescription)"
+                                                } else if let message = message {
+                                                    statusMessage = "Received status"
+                                                    parseStatus(message)
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -372,13 +427,28 @@ struct ContentView: View {
         }
         .padding(20)
         .onAppear {
-            if let port = UInt16(portString) {
-                manager = UDPConnectionManager(host: ipAddress, port: port)
+            if let port = UInt16(targetPort) {
+                manager = UDPConnectionManager(host: targetIP, port: port)
                 manager?.start()
             }
         }
         .onDisappear {
             manager?.cancel()
+        }
+    }
+    
+    private func parseStatus(_ message: String) {
+        let components = message.components(separatedBy: " | ")
+        for component in components {
+            if component.hasPrefix("MAC:") {
+                receivedMAC = String(component.dropFirst(4))
+            } else if component.hasPrefix("IP:") {
+                receivedIP = String(component.dropFirst(3))
+            } else if component.hasPrefix("Port:") {
+                receivedPort = String(component.dropFirst(5))
+            } else if component.hasPrefix("Mode:") {
+                receivedMode = String(component.dropFirst(5))
+            }
         }
     }
 }
