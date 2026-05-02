@@ -35,6 +35,15 @@ struct HomeView: View {
                                         Text(robot.avatar)
                                             .font(.system(size: 40))
                                     }
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            withAnimation {
+                                                store.deleteRobot(robot)
+                                            }
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                    }
                                     
                                     Text(robot.name)
                                         .font(.caption)
