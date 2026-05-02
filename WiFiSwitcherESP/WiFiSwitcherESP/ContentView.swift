@@ -24,6 +24,16 @@ struct ContentView: View {
     @State private var receivedPort: String = ""
     @State private var receivedMode: String = ""
     
+    var robot: RobotDetails?
+    
+    init(robot: RobotDetails? = nil) {
+        self.robot = robot
+        if let r = robot {
+            _targetIP = State(initialValue: r.ip)
+            // if robot had port, we could use it here. Defaulting to 8080.
+        }
+    }
+    
     var body: some View {
         VStack(spacing: 24) {
             Text("WiFi Switcher")

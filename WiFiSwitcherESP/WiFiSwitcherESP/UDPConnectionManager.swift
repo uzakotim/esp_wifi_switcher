@@ -1,7 +1,7 @@
 import Foundation
 import Network
 
-final class UDPConnectionManager {
+final class UDPConnectionManager: @unchecked Sendable {
     private let host: NWEndpoint.Host
     private let port: NWEndpoint.Port
     private var connection: NWConnection?
