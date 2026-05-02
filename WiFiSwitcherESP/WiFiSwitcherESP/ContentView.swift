@@ -51,15 +51,15 @@ struct ContentView: View {
                                 .keyboardType(.numbersAndPunctuation)
                                 .textFieldStyle(.roundedBorder)
                         }
-                        VStack{
-                            Text("Device Port")
-                            TextField("Device Port", text: $targetPort)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled(true)
-                                .keyboardType(.numberPad)
-                                .frame(width: 90)
-                                .textFieldStyle(.roundedBorder)
-                        }
+//                        VStack{
+//                            Text("Device Port")
+//                            TextField("Device Port", text: $targetPort)
+//                                .textInputAutocapitalization(.never)
+//                                .autocorrectionDisabled(true)
+//                                .keyboardType(.numberPad)
+//                                .frame(width: 90)
+//                                .textFieldStyle(.roundedBorder)
+//                        }
                     }
                 }
                 .padding()
@@ -81,15 +81,15 @@ struct ContentView: View {
                             .textFieldStyle(.roundedBorder)
                     }
                     
-                    VStack{
-                        Text("New Port")
-                        TextField("Port", text: $portString)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled(true)
-                            .keyboardType(.numberPad)
-                            .frame(width: 90)
-                            .textFieldStyle(.roundedBorder)
-                    }
+//                    VStack{
+//                        Text("New Port")
+//                        TextField("Port", text: $portString)
+//                            .textInputAutocapitalization(.never)
+//                            .autocorrectionDisabled(true)
+//                            .keyboardType(.numberPad)
+//                            .frame(width: 90)
+//                            .textFieldStyle(.roundedBorder)
+//                    }
                 }
                 
                 VStack(spacing: 12) {
