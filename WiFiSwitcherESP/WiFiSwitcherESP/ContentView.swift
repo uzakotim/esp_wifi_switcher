@@ -24,10 +24,22 @@ struct ContentView: View {
     @State private var receivedPort: String = ""
     @State private var receivedMode: String = ""
     
-    var robot: RobotDetails?
+    @ObservedObject var store: RobotStore
+    @State var robot: RobotDetails?
     
-    init(robot: RobotDetails? = nil) {
-        self.robot = robot
+    init(store: RobotStore, robot: RobotDetails? = nil) {
+        self.store = store
+        _robot = State(initialValue: robot)
+        if let r = robot {
+            _targetIP = State(initialValue: r.ip)
+            // if robot had port, we could use it here. Defaulting to 8080.
+        }
+    }
+    
+    @MainActor init(robot: RobotDetails? = nil) {
+        let store = RobotStore()
+        self.store = store
+        _robot = State(initialValue: robot)
         if let r = robot {
             _targetIP = State(initialValue: r.ip)
             // if robot had port, we could use it here. Defaulting to 8080.
@@ -246,6 +258,11 @@ struct ContentView: View {
                                     // ip
                                     try await manager.sendStringAsync("app:set:ip:\(ipAddress)")
                                     targetIP = ipAddress
+                                    if var currentRobot = robot {
+                                        currentRobot.ip = ipAddress
+                                        store.addOrUpdateRobot(currentRobot)
+                                        robot = currentRobot
+                                    }
                                     statusMessage = "Set IP..."
                                     try await Task.sleep(nanoseconds: 300_000_000)
                                     
@@ -433,5 +450,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView(store: RobotStore())
 }

@@ -26,7 +26,7 @@ struct HomeView: View {
                 } else {
                     LazyVGrid(columns: columns, spacing: 20) {
                         ForEach(store.robots) { robot in
-                            NavigationLink(destination: ContentView(robot: robot)) {
+                            NavigationLink(destination: ContentView(store: store, robot: robot)) {
                                 VStack {
                                     ZStack {
                                         Circle()
