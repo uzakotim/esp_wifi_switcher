@@ -142,10 +142,9 @@ void setup() {
         delay(500);
         Serial.print(".");
       }
-      if (WiFi.status() == WL_CONNECTED){
+      if (WiFi.status() == WL_CONNECTED) {
         Serial.println("\nConnected! IP: " + WiFi.localIP().toString());
-      }
-      else{
+      } else {
         Serial.println("\nConnection Failed.");
         EEPROM.write(ADDR_MODE, 0);
         EEPROM.commit();
@@ -168,11 +167,10 @@ void loop() {
     String message = String(packetBuffer);
     Serial.println("UDP Msg: " + message);
 
-    if (message == "app:reboot"){
+    if (message == "app:reboot") {
       Serial.println("Rebooting...");
       ESP.restart();
-    }
-    else if (message.startsWith("app:mode:")) {
+    } else if (message.startsWith("app:mode:")) {
       EEPROM.write(ADDR_MODE, message.substring(9).toInt());
       EEPROM.commit();
       udp.beginPacket(udp.remoteIP(), udp.remotePort());
@@ -217,10 +215,13 @@ void loop() {
 
     else if (message == "app:get:status") {
       udp.beginPacket(udp.remoteIP(), udp.remotePort());
-      String response =
-          "MAC:" + device_mac + " | IP:" + WiFi.localIP().toString() +
-          WiFi.softAPIP().toString() + " | Port:" + String(localUdpPort) +
-          " | Mode:" + String(EEPROM.read(ADDR_MODE));
+      // localIP is unset when in AP mode, so use softAPIP
+      IPAddress ip = WiFi.localIP();
+      if (ip[0] == 0)
+        ip = WiFi.softAPIP();
+      String response = "MAC:" + device_mac + " | IP:" + ip.toString() +
+                        " | Port:" + String(localUdpPort) +
+                        " | Mode:" + String(EEPROM.read(ADDR_MODE));
       udp.write(response.c_str());
       udp.endPacket();
     }
