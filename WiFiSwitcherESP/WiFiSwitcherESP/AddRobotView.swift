@@ -8,25 +8,61 @@ struct AddRobotView: View {
     @State private var selectedDevice: DiscoveredDevice?
     @State private var name: String = ""
     @State private var avatar: String = "🤖" // Default emoji
+    @State private var manualIP: String = ""
+    @State private var manualSearch: Bool = false
     
     var body: some View {
         NavigationStack {
             Form {
                 Section(header: Text("Search Network")) {
-                    if searchManager.isSearching {
-                        HStack {
-                            ProgressView()
-                            Text("Searching 192.168.1.2-255...")
-                                .foregroundColor(.secondary)
-                                .padding(.leading, 8)
-                        }
-                    } else {
+                    HStack {
                         Button("Find Robots") {
                             selectedDevice = nil
                             searchManager.search()
+                            manualSearch = false
+                        }
+                        .disabled(searchManager.isSearching)
+                        
+                        if searchManager.isSearching && !manualSearch {
+                            Spacer()
+                            ProgressView()
+                                .padding(.trailing, 4)
+                            Text("Searching...")
+                                .foregroundColor(.secondary)
+                                .font(.subheadline)
                         }
                     }
-                    
+                }
+                
+                Section(header: Text("Manual Check")) {
+                    TextField("Enter IP Address", text: $manualIP)
+                        .keyboardType(.decimalPad)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                        .disabled(searchManager.isSearching)
+                        
+                    HStack {
+                        Button("Check IP") {
+                            selectedDevice = nil
+                            if !manualIP.isEmpty {
+                                manualSearch = true
+                                searchManager.searchSpecificIP(manualIP)
+                            }
+                        }
+                        .disabled(manualIP.isEmpty || searchManager.isSearching)
+                        
+                        if searchManager.isSearching && manualSearch{
+                            Spacer()
+                            ProgressView()
+                                .padding(.trailing, 4)
+                            Text("Searching...")
+                                .foregroundColor(.secondary)
+                                .font(.subheadline)
+                        }
+                    }
+                }
+                
+                Section(header: Text("Found Devices")) {
                     if !searchManager.foundDevices.isEmpty {
                         ForEach(searchManager.foundDevices) { device in
                             HStack {
