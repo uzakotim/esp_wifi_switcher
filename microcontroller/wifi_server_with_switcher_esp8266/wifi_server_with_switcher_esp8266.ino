@@ -175,6 +175,9 @@ void handleCommand() {
     }
     String message = dir + " " + speed;
     Serial.println(message);
+    digitalWrite(LED, LOW);
+    delay(5);
+    digitalWrite(LED, HIGH);
     server.send(200, "text/plain", "OK");
   } else {
     server.send(400, "text/plain", "Missing parameters");
@@ -330,9 +333,6 @@ void loop() {
     int len = udp.read(packetBuffer, 255);
     if (len > 0)
       packetBuffer[len] = 0;
-    digitalWrite(LED, HIGH);
-    delay(5);
-    digitalWrite(LED, LOW);
     String message = String(packetBuffer);
     if (message == "app:reboot") {
       // Serial.println("Rebooting...");
@@ -395,5 +395,8 @@ void loop() {
       // actual motor command
       Serial.println(message);
     }
+    digitalWrite(LED, LOW);
+    delay(5);
+    digitalWrite(LED, HIGH);
   }
 }
